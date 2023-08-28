@@ -85,20 +85,51 @@ def lossFunction(targetVec,actualVec):
     return (1/len(targetVec))*np.sum(np.square(np.subtract(targetVec,actualVec)))
 
 def sigmoid(x):
-    return 2*np.pi/(1+np.exp(-0.000001*x))
+    return 2*np.pi/(1+np.exp(-0.00001*x))
 
 def ReLU(x):
     return np.maximum(0, x)
 
+def adam(dx,beta1,beta2,mom_1,mom_2,i):
+
+    print(dx)
+
+    mom_1 = mom_1*beta1 + (1-beta1)*dx
+    mom_2 = beta2*mom_1 + (1-beta2)*dx*dx
+
+    firstUnbias = mom_1 / (1 - beta1**i)
+    secondUnbias = mom_2 / (1 - beta2**i)
+    print(mom_2/ 1-beta2**i)
+
+    incX = firstUnbias / (np.sqrt(secondUnbias)+1e-6)
+
+    return incX, mom_1, mom_2 
+
+
 #def backPass(x,y,y_g):
 #    return (2/len(x))*(y-y_g).dot(x.T)
 
-numExamples = 1000
+numExamples = 5000
 dataGet = data(numExamples)
 m = len(dataGet.x)
 
 learnRate = 0.001
-numHiddenNodes = 16
+numHiddenNodes = 10
+
+beta1= 0.9
+beta2 = 0.999
+
+w1mom_1 = 0
+w1mom_2 = 0
+
+w2mom_1 = 0
+w2mom_2 = 0
+
+b1mom_1 = 0
+b1mom_2 = 0
+
+b2mom_1 = 0
+b2mom_2 = 0
 
 ## prep data
 grayIms = np.dot(dataGet.x[...,:3], [0.299, 0.587, 0.114]) # take up to the 3rd index
@@ -136,34 +167,52 @@ b2 = np.random.rand(1,1)
 
 if __name__ == "__main__":
 
-    for i in range(10000):
+    i = 0
+    lastLoss = 1e64
+    while True:
 
-        x_2 = linRegresOne(w1,edgesLin.T,b1)
+        try:
+            x_2 = linRegresOne(w1,edgesLin.T,b1)
 
-        x_3 = ReLU(x_2)
+            x_3 = ReLU(x_2)
 
-        x_4 = linRegresOne(w2,x_3,b2)
+            x_4 = linRegresOne(w2,x_3,b2)
 
-        x_5 = sigmoid(x_4)
+            x_5 = sigmoid(x_4)
 
-        sigDiv = sigmoid(x_4)*(1-sigmoid(x_4))
+            sigDiv = sigmoid(x_4)*(1-sigmoid(x_4))
 
-        postCostDiv = -(2/m)*np.multiply(sigDiv,(dataGet.y-x_5))
+            postCostDiv = -(2/m)*np.multiply(sigDiv,(dataGet.y-x_5))
 
-        dW2 = postCostDiv.dot(x_3.T)
-        dW1 = w2.T.dot(postCostDiv).dot(edgesLin)
+            dW2 = postCostDiv.dot(x_3.T)
+            dW1 = w2.T.dot(postCostDiv).dot(edgesLin)
 
-        db2 = np.sum(postCostDiv)
-        db1 = np.sum(w2.T.dot(postCostDiv))
+            db2 = np.sum(postCostDiv)
+            db1 = np.sum(w2.T.dot(postCostDiv))
 
-        w1 = np.add(w1,(learnRate/m)*dW1)
-        w2 = np.add(w2,(learnRate/m)*dW2)
+            w1 = np.add(w1,(learnRate/m)*dW1)
+            w2 = np.add(w2,(learnRate/m)*dW2)
 
-        b1 = np.add(b1,(learnRate/m)*db1)
-        b2 = np.add(b2,(learnRate/m)*db2)
+            b1 = np.add(b1,(learnRate/m)*db1)
+            b2 = np.add(b2,(learnRate/m)*db2)
 
-        if i % 100 == 0:
-            print(f"Run: {i} Loss {lossFunction(dataGet.y,x_5)}")
+            if i % 100 == 0:
+                currentLoss = lossFunction(dataGet.y,x_5)
+                print(f"Run: {i} Loss {currentLoss}")
+                if currentLoss > lastLoss: 
+                    break
+                else:
+                    lastLoss = currentLoss
+
+            i +=1
+
+        except KeyboardInterrupt:
+            np.save("w1.npy",w1)
+            np.save("w2.npy",w2)
+
+            np.save("b1.npy",b1)
+            np.save("b2.npy",b2)
+            quit()
 
 
     # test 
@@ -200,4 +249,3 @@ if __name__ == "__main__":
 
     np.save("b1.npy",b1)
     np.save("b2.npy",b2)
-
