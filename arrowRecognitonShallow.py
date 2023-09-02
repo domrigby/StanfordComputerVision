@@ -50,7 +50,7 @@ class Arrow():
         return points
 
 class data():
-    def __init__(self,numExamples):
+    def __init__(self,numExamples,pytorch=False):
         pygame.init()
 
         self.xRes = 31
@@ -65,7 +65,11 @@ class data():
 
         print(self.radius)
 
-        self.x = np.zeros((numExamples,self.xRes,self.yRes,self.depth))
+        if pytorch:
+            self.x = np.zeros((numExamples,self.depth,self.xRes,self.yRes))
+        else:
+            self.x = np.zeros((numExamples,self.xRes,self.yRes,self.depth))
+            
         self.y = np.zeros((1,numExamples))
 
         ## change above if stops working
@@ -78,7 +82,10 @@ class data():
             arrowPoints = arrow.plot(direction,20,self.picMiddle)
             self.screen.fill((0,0,0))
             pygame.draw.polygon(self.screen, (255, 0, 0),arrowPoints)
-            self.x[i,:] = pygame.surfarray.array3d(self.screen)#.flatten(
+            if pytorch:
+                self.x[i,:] = pygame.surfarray.array3d(self.screen).T#.flatten(
+            else:
+                self.x[i,:] = pygame.surfarray.array3d(self.screen)
 
 def linRegresOne(w,x,b):
     return np.add(w.dot(x),b)
